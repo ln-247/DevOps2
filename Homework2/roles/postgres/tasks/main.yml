@@ -4,3 +4,30 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+
+- name: Create /data directory
+  ansible.builtin.file: #модуль управления файлами
+    path: /data
+    state: directory 
+    owner: root
+    group: root
+    mode: "0755" #для владельца 7 = 4+2+1, группа и остальные  5 = 4+1, то есть обычный пользователь может просматривать /data, но не может создавать там папки
+    #4 - читать список содержимого
+    #2 - создавать и удалять элементы
+    #1 - проходить через каталог и обращаться к его содержимому
+
+- name: Create PostgreSQL parent directory
+  ansible.builtin.file:
+    path: /data/postgres
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0700"
+
+- name: Create PostgreSQL data directory
+  ansible.builtin.file:
+    path: "{{ postgres__data_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0700"

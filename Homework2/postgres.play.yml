@@ -1,6 +1,6 @@
-- name: Configure PostgreSQL on vm1
+- name: Configure PostgreSQL on vm1 #Нестандартное имя плейбука
   hosts: vm1
-  become: true
+  become: true #инструкция повысить права, через sudo
 
   roles:
     - postgres

@@ -1,4 +1,6 @@
 postgres__packages:
-  - postgresql
-  - python3-psycopg2
-  - acl
+  - postgresql #устанавливаем PostgreSQL
+  - python3-psycopg2 #устанавливаем библиотеку для работы с PostgreSQL из Python  
+  - acl #устанавливаем утилиту для управления списком контроля доступа (Access Control List, ACL)
+
+postgres__data_dir: /data/postgres/data # путь для данных PostgreSQL
