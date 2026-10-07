@@ -1,7 +1,7 @@
 - name: Install PostgreSQL and required packages
   ansible.builtin.apt:
     name: "{{ postgres__packages }}"
-    state: present
+    state: present #модуль apt проверяет наличие пакетов и если они уже установлены, задача возвращает ok
     update_cache: true
     cache_valid_time: 3600
 
@@ -37,3 +37,21 @@
     cmd: "/usr/lib/postgresql/{{ __pg_version }}/bin/pg_ctl initdb -D {{ postgres__data_dir }}"
     creates: "{{ postgres__data_dir }}/PG_VERSION" #если файл PG_VERSION существует, то команда не будет выполняться
   become_user: postgres
+
+- name: Edit postgresql.conf
+  ansible.builtin.lineinfile:
+    path: "{{ postgres__data_dir }}/postgresql.conf"
+    regexp: "^#?{{ item.key | regex_escape() }}\\s*="
+    line: "{{ item.key }} = {{ item.value }}"
+    create: false
+  loop: "{{ postgres__opts | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Configure pg_hba.conf
+  ansible.builtin.template:
+    src: pg_hba.conf.j2 # шаблон для конфигурации pg_hba.conf, .j2 это шаблон Jinja2. откуда записываем
+    dest: "{{ postgres__data_dir }}/pg_hba.conf" #куда записываем
+    owner: postgres
+    group: postgres
+    mode: "0600"
