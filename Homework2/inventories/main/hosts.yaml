@@ -5,6 +5,8 @@ all:
   hosts:
     vm1:
       ansible_host: 127.0.0.1 # Адрес, используемый Ansible для подключения. Должен быть доступен с контроллера
+      ansible_become_exe: /usr/bin/sudo.ws #добавлено, чтобы Ansible использовал классический sudo вместо sudo-rs 
+                                            #была ошибка Timeout waiting for privilege escalation prompt, хотя вручную повышение прав работало
   children:
     part1:
       hosts:

@@ -1,0 +1,4 @@
+postgres__packages:
+  - postgresql
+  - python3-psycopg2
+  - acl
