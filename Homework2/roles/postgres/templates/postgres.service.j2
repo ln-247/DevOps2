@@ -1,0 +1,24 @@
+{# Общая конфигурация для всех юнитов#}
+[Unit]
+Description=PostgreSQL
+Documentation=https://www.postgresql.org/docs/
+
+{# Настройки службы#}
+[Service]
+User=postgres
+Group=postgres
+{# Служба запускает один процесс, живущий всё время работы#}
+Type=simple
+
+{# Команда для запуска службы#}
+ExecStart=/usr/lib/postgresql/{{ __pg_version }}/bin/postgres -D {{ postgres__data_dir }}
+  
+{# Перезапускать при выходе с ошибкой#}
+Restart=on-failure
+{# Интервал перезапуска#}
+RestartSec=15
+
+{# Параметры автозапуска#}
+[Install]
+{# Запускать после инициализации системы, одновременно с экраном входа#}
+WantedBy=multi-user.target

@@ -55,3 +55,42 @@
     owner: postgres
     group: postgres
     mode: "0600"
+
+- name: Stop and disable default PostgreSQL service
+  ansible.builtin.systemd_service:
+    name: "postgresql@{{ __pg_version }}-main" #имя службы, которой управляет модуль systemd_service
+    state: stopped
+    enabled: false
+
+
+- name: Disable automatic startup of default cluster
+  ansible.builtin.lineinfile:
+    path: "/etc/postgresql/{{ __pg_version }}/main/start.conf" #путь к файлу управления запуском стандартного кластера
+    regexp: "^(auto|manual|disabled)$" #ищем строку, которая содержит один из этих режимов
+    line: manual #найденную строку заменяем на manual
+    create: false
+  notify: Reload systemd
+
+- name: Create PostgreSQL systemd service
+  ansible.builtin.template:
+    src: postgres.service.j2
+    dest: /etc/systemd/system/postgres.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Apply systemd changes before starting PostgreSQL
+  ansible.builtin.meta: flush_handlers #Для принудительного запуска хендлеров. Проверка должна выполняться и после отката конфигурации
+
+- name: Start and enable PostgreSQL service
+  ansible.builtin.systemd_service:
+    name: postgres.service
+    state: started
+    enabled: true
+
+- name: Check PostgreSQL with SELECT 1
+  ansible.builtin.command:
+    cmd: psql -d postgres -c 'SELECT 1;'
+  become_user: postgres
+  changed_when: false #не отмечает эту задачу как изменившую систему. Эта строка влияет только на отметку changed, ошибки она не скрывает

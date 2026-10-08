@@ -1,7 +1,7 @@
 
 {{ ansible_managed | comment }}
 
-{% for rule in postgres__hba_rules %} {#ачинает цикл по нашему списку правил из defaults/main.yml#}
+{% for rule in postgres__hba_rules %} {#начинает цикл по нашему списку правил из defaults/main.yml#}
 {{ rule.type }} {{ rule.database }} {{ rule.user }} {{ rule.method }} {#подставляет его значения через пробел#}
 {% endfor %}
 
