@@ -47,6 +47,7 @@
   loop: "{{ postgres__opts | dict2items }}"
   loop_control:
     label: "{{ item.key }}"
+  notify: Restart PostgreSQL 
 
 - name: Configure pg_hba.conf
   ansible.builtin.template:
@@ -55,6 +56,7 @@
     owner: postgres
     group: postgres
     mode: "0600"
+  notify: Restart PostgreSQL
 
 - name: Stop and disable default PostgreSQL service
   ansible.builtin.systemd_service:
@@ -78,7 +80,10 @@
     owner: root
     group: root
     mode: "0644"
-  notify: Reload systemd
+  notify: 
+    - Reload systemd
+    - Restart PostgreSQL
+
 
 - name: Apply systemd changes before starting PostgreSQL
   ansible.builtin.meta: flush_handlers #Для принудительного запуска хендлеров. Проверка должна выполняться и после отката конфигурации
@@ -94,3 +99,22 @@
     cmd: psql -d postgres -c 'SELECT 1;'
   become_user: postgres
   changed_when: false #не отмечает эту задачу как изменившую систему. Эта строка влияет только на отметку changed, ошибки она не скрывает
+
+- name: Create Databases
+  community.postgresql.postgresql_db:
+    name: "{{ item.name }}"
+    encoding: "{{ item.encoding | default(omit) }}" #Вместо дублирования значений по умолчанию используем omit. Если значение равно omit, параметр игнорируется
+    #Полей encoding и state мы не указали, поэтому default(omit) исключит эти параметры из вызова модуля. По умолчанию модуль обеспечивает наличие базы и создаст её, если её ещё нет
+    state: "{{ item.state | default(omit) }}"
+  loop: "{{ postgres__databases }}"
+  become_user: postgres
+
+- name: Create PostgreSQL users
+  community.postgresql.postgresql_user:
+    name: "{{ item.name }}"
+    password: "{{ item.password | default(omit) }}" #если пароль не указан, omit исключает параметр из вызова модуля и модуль создаст пользователя без пароля
+    role_attr_flags: "{{ item.role_attr_flags | default(omit) }}" #если роль не указана, omit исключит параметр из вызова модуля и модуль создаст пользователя без ролей
+    state: "{{ item.state | default('present') }}" #означает, чтопользователь должен существовать
+  loop: "{{ postgres__users }}"
+  become_user: postgres
+  no_log: true #скрывает вывод задачи, чтобы пароль не оказался в отчёте

@@ -1,0 +1,9 @@
+postgres__users:
+  - name: petrusha
+    password: "{{ vault_petrusha_password }}"
+    role_attr_flags: LOGIN
+
+
+  - name: postgres_exporter
+    password: "{{ vault_postgres_exporter_password }}"
+    role_attr_flags: LOGIN

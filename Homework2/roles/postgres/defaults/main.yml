@@ -14,3 +14,8 @@ postgres__hba_rules: #разрешаем локальный вход под по
     database: all
     user: postgres
     method: peer
+
+postgres__databases:
+  - name: homework
+
+postgres__users: []
