@@ -1,1 +1,3 @@
 __pg_version: "18" # Версия PostgreSQL, которая будет использоваться для инициализации кластера базы данных
+
+__postgres_exporter_archive: "postgres_exporter-{{ postgres__exporter_version }}.linux-{{ postgres__exporter_arch }}"

@@ -7,3 +7,7 @@ postgres__users:
   - name: postgres_exporter
     password: "{{ vault_postgres_exporter_password }}"
     role_attr_flags: LOGIN
+    groups:
+      - pg_monitor
+
+postgres__exporter_db_password: "{{ vault_postgres_exporter_password }}"

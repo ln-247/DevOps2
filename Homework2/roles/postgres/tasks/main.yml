@@ -118,3 +118,82 @@
   loop: "{{ postgres__users }}"
   become_user: postgres
   no_log: true #скрывает вывод задачи, чтобы пароль не оказался в отчёте
+
+- name: Grant PostgreSQL role memberships #включим права для мониторинга для пользователя postgres_exporter, чтобы он мог получать статистику из PostgreSQL
+  community.postgresql.postgresql_membership: #модуль управления членством в ролях PostgreSQL
+    groups: "{{ item.groups }}"
+    target_roles:
+      - "{{ item.name }}"
+    state: present 
+  loop: "{{ postgres__users }}"
+  when:
+    - item.groups is defined
+    - (item.state | default('present')) == 'present'
+  become_user: postgres
+  no_log: true 
+
+- name: Prepare PostgreSQL Exporter on controller
+  delegate_to: localhost
+  become: false
+  run_once: true
+  block: #объединяет первые две задачи, они выполняются на контроллере без sudo
+    - name: Create exporter download directory
+      ansible.builtin.file:
+        path: /tmp/postgres-exporter
+        state: directory
+        mode: "0755"
+
+    - name: Download and extract PostgreSQL Exporter
+      ansible.builtin.unarchive:
+        src: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres__exporter_version }}/{{ __postgres_exporter_archive }}.tar.gz"
+        dest: /tmp/postgres-exporter
+        remote_src: true #обрабатывать на той машине, где выполняется задача
+        creates: "/tmp/postgres-exporter/{{ __postgres_exporter_archive }}/postgres_exporter" #позволяет пропустить этот шаг, когда бинарник уже распакован
+
+- name: Install PostgreSQL Exporter binary
+  ansible.builtin.copy:
+    src: "/tmp/postgres-exporter/{{ __postgres_exporter_archive }}/postgres_exporter"
+    dest: /usr/local/bin/postgres_exporter
+    owner: root
+    group: root
+    mode: "0755"
+  notify: Restart PostgreSQL Exporter
+
+
+- name: Create PostgreSQL Exporter system user
+  ansible.builtin.user:
+    name: postgres_exporter
+    system: true
+    create_home: false
+    shell: /usr/sbin/nologin
+
+- name: Configure PostgreSQL Exporter connection
+  ansible.builtin.template:
+    src: postgres_exporter.env.j2
+    dest: /etc/postgres_exporter.env
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  diff: false
+  notify: Restart PostgreSQL Exporter
+
+- name: Create PostgreSQL Exporter systemd service
+  ansible.builtin.template:
+    src: postgres_exporter.service.j2
+    dest: /etc/systemd/system/postgres_exporter.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart PostgreSQL Exporter
+
+- name: Apply exporter service changes
+  ansible.builtin.meta: flush_handlers
+
+- name: Start and enable PostgreSQL Exporter
+  ansible.builtin.systemd_service:
+    name: postgres_exporter.service
+    state: started
+    enabled: true

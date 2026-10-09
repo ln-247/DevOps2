@@ -1,0 +1,15 @@
+[Unit]
+Description=PostgreSQL Exporter
+Wants=postgres.service
+After=postgres.service
+
+[Service]
+Type=simple
+User=postgres_exporter
+EnvironmentFile=/etc/postgres_exporter.env
+ExecStart=/usr/local/bin/postgres_exporter --web.listen-address=:{{ postgres__exporter_port }} --config.file=
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

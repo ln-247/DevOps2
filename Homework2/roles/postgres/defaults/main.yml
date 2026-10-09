@@ -9,13 +9,26 @@ postgres__opts:
   port: 5432
   max_connections: 100
 
-postgres__hba_rules: #разрешаем локальный вход под пользователем postgres
+postgres__hba_rules: #разрешаем локальный вход под пользователем postgres и разрешаем экспортеру подключаться к БД
   - type: local
     database: all
     user: postgres
     method: peer
 
+  - type: host
+    database: postgres
+    user: postgres_exporter
+    address: 127.0.0.1/32
+    method: scram-sha-256 #способ проверки пароля
+
 postgres__databases:
   - name: homework
 
 postgres__users: []
+
+postgres__exporter_version: "0.20.1"
+postgres__exporter_arch: amd64
+
+postgres__exporter_port: 9187
+postgres__exporter_db_user: postgres_exporter
+postgres__exporter_db_password: ""
